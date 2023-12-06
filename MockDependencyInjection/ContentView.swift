@@ -10,7 +10,6 @@
 import SwiftUI
 import Combine
 
-
 // Problems with Singletons:
 //
 // 1. Singleton's are Global.
@@ -31,6 +30,9 @@ protocol DataServiceProtocol {
 
 class ProductionDataService: DataServiceProtocol {
     
+    //static let instance = ProductionDataService() // Singletone
+    //let url: URL(url: URL(string: "https://jsonplaceholder.typicode.com/posts")!
+    
     let url: URL
     
     init(url: URL) {
@@ -47,10 +49,15 @@ class ProductionDataService: DataServiceProtocol {
 }
 
 class MockDataService: DataServiceProtocol {
-    let testData: [PostModel] = [
-        PostModel(userId: 1, id: 1, title: "Yes", bode: "No"),
-        PostModel(userId: 1, id: 1, title: "White", bode: "Black"),
-    ]
+    let testData: [PostModel]
+  
+    
+    init(testData: [PostModel]?) {
+        self.testData = testData ?? [
+            PostModel(userId: 1, id: 1, title: "Yes", bode: "No"),
+            PostModel(userId: 1, id: 1, title: "White", bode: "Black"),
+        ]
+    }
     
     func getData() -> AnyPublisher<[PostModel], Error> {
         Just(testData)
@@ -58,6 +65,14 @@ class MockDataService: DataServiceProtocol {
             .eraseToAnyPublisher()
     }
 }
+
+//class Dependencies {
+//    let dataService: DataServiceProtocol
+//
+//    init(dataService: DataServiceProtocol) {
+//        self.dataService = dataService
+//    }
+//}
 
 class MockDependencyInjectionViewModel: ObservableObject {
     @Published var dataArray: [PostModel] = []
@@ -84,7 +99,7 @@ class MockDependencyInjectionViewModel: ObservableObject {
 struct ContentView: View {
     @StateObject private var vm: MockDependencyInjectionViewModel
     
-    init(dataService: DataServiceProtocol) {
+    init(dataService: DataServiceProtocol /*Dependencies*/) {
         _vm = StateObject(wrappedValue: MockDependencyInjectionViewModel(dataService: dataService))
     }
     
@@ -101,7 +116,9 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
 //    let dataService = ProductionDataService(url: URL(string: "https://jsonplaceholder.typicode.com/posts")!)
-    static let dataService = MockDataService()
+    static let dataService = MockDataService(testData: [
+    PostModel(userId: 123, id: 123, title: "Test", bode: "test")
+    ])
     
     static var previews: some View {
         ContentView(dataService: dataService)

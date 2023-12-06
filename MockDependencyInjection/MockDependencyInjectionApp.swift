@@ -13,7 +13,9 @@ import SwiftUI
 struct MockDependencyInjectionApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            let dataService = MockDataService(testData: nil)
+
+            ContentView(dataService: dataService)
         }
     }
 }
