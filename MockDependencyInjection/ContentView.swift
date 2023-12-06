@@ -39,7 +39,28 @@ class ProductionDataService {
         .eraseToAnyPublisher()
 }
 
+class MockDependencyInjectionViewModel: ObservableObject {
+    @Published var dataArray: [PostModel] = []
+    var cancellebles = Set<AnyCancellable>()
+    let dataService: ProductionDataService
+    
+    init(cancellebles: Set<AnyCancellable> = Set<AnyCancellable>(), dataService: ProductionDataService) {
+        self.cancellables = cancellables
+        loadPosts()
+        //self.dataService = dataService
+    }
+    
+    private func loadPosts() {
+        dataService.getData()
+            .sink { _ in
+                
+            } receiveValue: { [weak self] returnedPosts in
+                self?.dataArray = returnedPosts
+            }
+            .store(in: &cancellables)
 
+    }
+}
 
 struct MockDependencyInjection: View {
     @StateObject private var vm: MockDependencyInjection
