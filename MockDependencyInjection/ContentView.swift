@@ -31,56 +31,58 @@ class ProductionDataService {
         self.url = url
     }
     
-    func getData() -> AnyPublisher<[PostModel], Error>
-    URLSession.shared.dataTaskPublisher(for: url)
-        .map({ $.0data })
-        .decode(type: [PostModel].self, decoder: JSONDecoder())
-        .receive(on: dispatchQueue.main)
-        .eraseToAnyPublisher()
-}
-
-class MockDependencyInjectionViewModel: ObservableObject {
-    @Published var dataArray: [PostModel] = []
-    var cancellebles = Set<AnyCancellable>()
-    let dataService: ProductionDataService
-    
-    init(cancellebles: Set<AnyCancellable> = Set<AnyCancellable>(), dataService: ProductionDataService) {
-        self.cancellables = cancellables
-        loadPosts()
-        //self.dataService = dataService
+    func getData() -> AnyPublisher<[PostModel], Error> {
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map({ $0.data })
+            .decode(type: [PostModel].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
     }
     
-    private func loadPosts() {
-        dataService.getData()
-            .sink { _ in
-                
-            } receiveValue: { [weak self] returnedPosts in
-                self?.dataArray = returnedPosts
-            }
-            .store(in: &cancellables)
-
-    }
-}
-
-struct MockDependencyInjection: View {
-    @StateObject private var vm: MockDependencyInjection
-    
-    var body: some View {
-        /*@START_MENU_TOKEN@*//*@PLACEHOLDER=Hello, world!@*/Text("Hello, world!")/*@END_MENU_TOKEN@*/
-    }
-}
-
-struct ContentView: View {
-    var body: some View {
+    class MockDependencyInjectionViewModel: ObservableObject {
+        @Published var dataArray: [PostModel] = []
+        var cancellables = Set<AnyCancellable>()
+        let dataService: ProductionDataService
         
-        ScrollView {
-            VStack {
-                
+        init(dataService: ProductionDataService) {
+            self.dataService = dataService
+            loadPosts()
+        }
+        
+        private func loadPosts() {
+            dataService.getData()
+                .sink { _ in
+                    
+                } receiveValue: { [weak self] returnedPosts in
+                    self?.dataArray = returnedPosts
+                }
+                .store(in: &cancellables)
+        }
+    }
+    
+    struct ContentView: View {
+        @StateObject private var vm: MockDependencyInjectionViewModel
+        
+        init(dataService: ProductionDataService) {
+            _vm = StateObject(wrappedValue: MockDependencyInjectionViewModel(dataService: dataService))
+        }
+        var body: some View {
+            
+            ScrollView {
+                VStack {
+                    ForEach(vm.dataArray) { post in
+                        Text(post.title)
+                    }
+                }
             }
         }
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    let dataService = ProductionDataService(url: URL(string: "https://jsonplaceholder.typicode.com/posts")!)
+    
+    static var previews: some View {
+        ContentView(dataService: dataService)
+    }
 }
